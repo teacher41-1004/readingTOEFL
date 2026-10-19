@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Reading Comprehension Section</title>
+<style>
+:root{--navy:#0b3d6b;--sea:#0e6ba8;--sky:#38a3dc;--pale:#eaf5fc;--line:#c9e2f2;--bg:#fff;--txt:#10304a;--ok:#1f9d55;--okbg:#e3f6ea;--bad:#d64545;--badbg:#fdeaea;--fs:clamp(12.6px,calc((.55vw + .6rem)*.9),15.3px);box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--txt);font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif;font-size:var(--fs);line-height:1.55}
+#app{height:100%;display:flex;flex-direction:column}
+header{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;padding:10px 20px;border-bottom:2px solid var(--line);background:linear-gradient(90deg,var(--pale),#fff)}
+.hl{color:var(--sea);font-weight:600}
+h1{margin:0;font-size:calc(var(--fs)*1.35);color:var(--navy);letter-spacing:.3px}
+.hr{display:flex;justify-content:flex-end;align-items:center;gap:14px;flex-wrap:wrap}
+.sw{display:flex;align-items:center;gap:6px}
+.time{font-variant-numeric:tabular-nums;font-weight:700;color:var(--navy);min-width:3.4em;text-align:center}
+button{font:inherit;cursor:pointer;border-radius:8px;border:1.5px solid var(--sea);background:#fff;color:var(--sea);padding:5px 12px;transition:.15s}
+button:hover:not(:disabled){background:var(--pale)}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.pri{background:var(--sea);color:#fff}
+button.pri:hover:not(:disabled){background:var(--navy)}
+.score{font-weight:700;color:var(--navy);background:var(--pale);padding:4px 12px;border-radius:999px}
+#prog{height:5px;background:var(--line)}
+#bar{height:100%;width:0;background:linear-gradient(90deg,var(--sky),var(--sea));transition:width .3s}
+main{flex:1;min-height:0;display:grid;grid-template-columns:2fr 1fr;gap:16px;padding:16px 20px}
+.panel{min-height:0;overflow-y:auto;border:1.5px solid var(--line);border-radius:14px;padding:18px 22px;background:#fff}
+.panel h2{margin:0 0 10px;font-size:calc(var(--fs)*1.15);color:var(--sea);text-transform:uppercase;letter-spacing:1px}
+.passage{overflow:auto}.ln{display:flex;white-space:nowrap}.g{flex:none;width:3.4em;text-align:right;padding-right:1em;font-style:italic;font-size:.9em;color:var(--sea)}.first .t{padding-left:2.2em}.gap{height:.6em}
+mark{background:#fff0a8;color:inherit;border-radius:3px;padding:1px 2px;box-shadow:0 0 0 2px #ffe36b}
+.q{font-weight:600;color:var(--navy);margin:0 0 12px}
+.tag{display:inline-block;font-size:.85em;background:#e8f1ff;color:var(--sea);border:1px solid var(--sky);border-radius:6px;padding:2px 8px;margin-bottom:10px}
+.opt{display:flex;gap:10px;width:100%;text-align:left;margin:0 0 9px;padding:9px 12px;border:1.5px solid var(--line);border-radius:10px;background:#fff;color:var(--txt)}
+.opt b{color:var(--sea);min-width:1.2em}
+.opt:hover:not(:disabled){border-color:var(--sky);background:var(--pale)}
+.opt.sel{border-color:var(--sea);background:var(--pale);box-shadow:inset 0 0 0 1px var(--sea)}
+.opt.ok{border-color:var(--ok);background:var(--okbg);color:#0f5d32}
+.opt.bad{border-color:var(--bad);background:var(--badbg);color:#8a2323}
+.opt:disabled{opacity:1;cursor:default}
+.acts{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+.msg{margin-top:10px;font-weight:600}
+footer{display:flex;justify-content:space-between;align-items:center;padding:10px 20px;border-top:2px solid var(--line);background:var(--pale)}
+#end{display:none;position:fixed;inset:0;background:#fff;z-index:5;align-items:center;justify-content:center;text-align:center;flex-direction:column;gap:10px;padding:20px}
+#end h2{font-size:calc(var(--fs)*2);color:var(--navy);margin:0}
+#end .big{font-size:calc(var(--fs)*3.2);font-weight:800;color:var(--sea)}
+@media (max-width:760px){main{grid-template-columns:1fr;grid-template-rows:1fr 1fr}header{grid-template-columns:1fr;text-align:center}.hr{justify-content:center}}
+</style>
+</head>
+<body>
+<div id="app">
+<header>
+  <div class="hl" id="slideNo"></div>
+  <h1>Reading Comprehension Section</h1>
+  <div class="hr">
+    <div class="sw"><button id="start" class="pri">Start</button><button id="pause">Pause</button><span class="time" id="time">00:00</span></div>
+    <span class="score" id="score"></span>
+  </div>
+</header>
+<div id="prog"><div id="bar"></div></div>
+<main>
+  <section class="panel passage" id="reading"></section>
+  <section class="panel" id="qp"></section>
+</main>
+<footer>
+  <button id="prev">&larr; Previous</button>
+  <span class="hl" id="pinfo"></span>
+  <button id="next" class="pri">Next &rarr;</button>
+</footer>
+</div>
+<div id="end"></div>
+
+<script>
+const P=[
+["As many as a thousand years ago in the Southwest, the Hopi and Zuni Indians of North","America were building with adobe—sun-baked brick plastered with mud. Their homes looked","remarkably like modern apartment houses. Some were four stories high and contained quarters","for perhaps a thousand people, along with storerooms for grain and other goods. These","buildings were usually put up against cliffs, both to make construction easier and for defense","against enemies. They were really villages in themselves, as later Spanish explorers must have","realized, since they called them pueblos, which is Spanish for towns."],
+["The people of the pueblos raised what are called the three sisters—corn, beans, and","squash. They made excellent pottery and wove marvelous baskets, some so fine that they could","hold water. The Southwest has always been a dry country where water is scarce. The Hopi and","Zuni brought water from streams to their fields and gardens through irrigation ditches. Water","was so important that it played a major role in their religion."],
+["The way of life of less-settled groups was simpler. Small tribes such as the Shoshone and","Ute wandered the dry and mountainous lands between the Rocky Mountains and the Pacific","Ocean. They gathered seeds and hunted small animals such as rabbits and snakes. In the Far","North the ancestors of today's Inuit hunted seals, walruses, and the great whales. They lived","right on the frozen seas in shelters called igloos built of blocks of packed snow. When summer","came, they fished for salmon and hunted the lordly caribou."],
+["The Cheyenne, Pawnee, and Sioux tribes, known as the Plains Indians, lived on the","grasslands between the Rocky Mountains and the Mississippi River. They hunted bison,","commonly called the buffalo. Its meat was the chief food of these tribes, and its hide was used","to make their clothing and the covering of their tents and tepees."]
+];
+const GUT={4:"Line",5:"(5)",10:"(10)",15:"(15)",20:"(20)"};
+const Q=[
+{q:"What does the passage mainly discuss?",o:["The architecture of early American Indian buildings","The movement of American Indians across North America","Ceremonies and rituals of American Indians","The way of life of American Indian tribes in early North America"],a:3,inf:1,e:["As many as a thousand years ago in the Southwest, the Hopi and Zuni Indians of North America were building with adobe—sun-baked brick plastered with mud.","The people of the pueblos raised what are called the three sisters—corn, beans, and squash.","The way of life of less-settled groups was simpler.","The Cheyenne, Pawnee, and Sioux tribes, known as the Plains Indians, lived on the grasslands between the Rocky Mountains and the Mississippi River."]},
+{q:"According to the passage, the Hopi and Zuni typically built their homes",o:["in valleys","next to streams","on open plains","against cliffs"],a:3,e:["These buildings were usually put up against cliffs, both to make construction easier and for defense against enemies."]},
+{q:"The word “They” in line 6 refers to",o:["goods","buildings","cliffs","enemies"],a:1,e:["These buildings were usually put up against cliffs","They were really villages in themselves"]},
+{q:"It can be inferred from the passage that the dwellings of the Hopi and Zuni were",o:["very small","highly advanced","difficult to defend","quickly constructed"],a:1,inf:1,e:["Some were four stories high and contained quarters for perhaps a thousand people, along with storerooms for grain and other goods."]},
+{q:"The author uses the phrase “the three sisters” in line 8 to refer to",o:["Hopi women","family members","important crops","rain ceremonies"],a:2,e:["The people of the pueblos raised what are called the three sisters—corn, beans, and squash."]},
+{q:"The word “scarce” in line 10 is closest in meaning to",o:["limited","hidden","pure","necessary"],a:0,e:["The Southwest has always been a dry country where water is scarce."]},
+{q:"Which of the following is true of the Shoshone and Ute?",o:["They were not as settled as the Hopi and Zuni.","They hunted caribou.","They built their homes with adobe.","They did not have many religious ceremonies."],a:0,e:["The way of life of less-settled groups was simpler. Small tribes such as the Shoshone and Ute wandered the dry and mountainous lands between the Rocky Mountains and the Pacific Ocean."]},
+{q:"According to the passage, which of the following groups lived in the grasslands?",o:["The Shoshone and Ute","The Cheyenne and Sioux","The Hopi and Zuni","The Pawnee and Inuit"],a:1,e:["The Cheyenne, Pawnee, and Sioux tribes, known as the Plains Indians, lived on the grasslands between the Rocky Mountains and the Mississippi River."]},
+{q:"Which of the following animals was most important to the Plains Indians?",o:["The salmon","The caribou","The seal","The bison"],a:3,e:["They hunted bison, commonly called the buffalo. Its meat was the chief food of these tribes, and its hide was used to make their clothing and the covering of their tents and tepees."]},
+{q:"Which of the following is NOT mentioned by the author as a dwelling place of early North Americans?",o:["Log cabins","Adobe houses","Tepees","Igloos"],a:0,inf:1,e:["building with adobe","shelters called igloos built of blocks of packed snow","the covering of their tents and tepees"]},
+{q:"The author groups North American Indians according to their",o:["names and geographical regions","arts and crafts","rituals and ceremonies","date of appearance on the continent"],a:0,inf:1,e:["in the Southwest, the Hopi and Zuni Indians","Small tribes such as the Shoshone and Ute wandered the dry and mountainous lands between the Rocky Mountains and the Pacific Ocean","In the Far North the ancestors of today's Inuit","lived on the grasslands between the Rocky Mountains and the Mississippi River"]}
+];
+const N=Q.length,L="ABCDE";
+let cur=0,st,secs=0,timer=null;
+const $=id=>document.getElementById(id);
+function reset(){st=Q.map(()=>({sel:null,checked:false,shown:false}));cur=0;secs=0;stop();$("end").style.display="none";tick();render()}
+function tick(){$("time").textContent=String(Math.floor(secs/60)).padStart(2,"0")+":"+String(secs%60).padStart(2,"0")}
+function run(){if(!timer)timer=setInterval(()=>{secs++;tick()},1000)}
+function stop(){clearInterval(timer);timer=null}
+function score(){return st.filter((s,i)=>s.checked&&s.sel===Q[i].a).length}
+function render(){
+  const q=Q[cur],s=st[cur],locked=s.checked||s.shown;
+  $("slideNo").textContent=`Slide ${cur+1} of ${N}`;
+  $("pinfo").textContent=`Question ${cur+1} / ${N}`;
+  $("score").textContent=`Score: ${score()}/${N}`;
+  $("bar").style.width=((cur+1)/N*100)+"%";
+  $("prev").disabled=cur===0;
+  $("next").textContent=cur===N-1?"Finish ✓":"Next →";
+  let n=0,out="";
+  P.forEach(par=>{
+    const full=par.join(" "),mk=new Array(full.length).fill(false);
+    if(s.shown)q.e.forEach(e=>{const i=full.indexOf(e);if(i>=0)for(let k=i;k<i+e.length;k++)mk[k]=true});
+    let off=0;
+    par.forEach((ln,j)=>{
+      n++;let t="",run="",cm=false;
+      for(let k=0;k<ln.length;k++){const m=mk[off+k];if(m!==cm){t+=cm?"<mark>"+run+"</mark>":run;run="";cm=m}run+=ln[k]}
+      t+=cm?"<mark>"+run+"</mark>":run;off+=ln.length+1;
+      out+=`<div class="ln${j===0?" first":""}"><span class="g">${GUT[n]||""}</span><span class="t">${t}</span></div>`;
+    });
+    out+='<div class="gap"></div>';
+  });
+  $("reading").innerHTML=out;
+  let h=(q.inf?'<div class="tag">Inferred answer (evaluation / inference) – not stated directly in the text</div>':"")+`<p class="q">${cur+1}. ${q.q}</p>`;
+  q.o.forEach((t,i)=>{
+    let c="opt";
+    if(s.shown){if(i===q.a)c+=" ok"}
+    else if(s.checked){if(i===s.sel)c+=i===q.a?" ok":" bad"}
+    else if(i===s.sel)c+=" sel";
+    if(s.shown&&s.checked&&i===s.sel&&i!==q.a)c+=" bad";
+    h+=`<button class="${c}" data-i="${i}" ${locked?"disabled":""}><b>${L[i]}.</b><span>${t}</span></button>`;
+  });
+  h+=`<div class="acts"><button class="pri" id="chk" ${locked||s.sel===null?"disabled":""}>Check Answers</button><button id="shw" ${s.shown?"disabled":""}>Show Answer</button></div>`;
+  if(s.checked)h+=`<div class="msg" style="color:${s.sel===q.a?"var(--ok)":"var(--bad)"}">${s.sel===q.a?"Correct!":"Not quite."}</div>`;
+  else if(s.shown)h+=`<div class="msg hl">Answer shown – no points for this slide.</div>`;
+  $("qp").innerHTML=h;
+  document.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{st[cur].sel=+b.dataset.i;render()});
+  $("chk").onclick=()=>{st[cur].checked=true;render()};
+  $("shw").onclick=()=>{st[cur].shown=true;render()};
+}
+function finish(){
+  stop();const sc=score();
+  $("end").innerHTML=`<h2>Finished!</h2><div class="big">${sc} / ${N}</div><div>Time: ${$("time").textContent}</div><div class="hl">${sc===N?"Perfect score!":sc>=N*.7?"Great job!":"Keep practising!"}</div><button class="pri" id="again">Play Again</button>`;
+  $("end").style.display="flex";$("again").onclick=reset;
+}
+$("prev").onclick=()=>{if(cur>0){cur--;render()}};
+$("next").onclick=()=>{if(cur<N-1){cur++;render()}else finish()};
+$("start").onclick=run;$("pause").onclick=stop;
+reset();
+</script>
+</body>
+</html>
